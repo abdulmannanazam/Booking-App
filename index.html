@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Simple Booking & Invoicing</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<style>
+  :root{--bg:#f5f7fb;--card:#fff;--ink:#111;--muted:#6b7280;--ok:#10b981;--warn:#f59e0b;--red:#ef4444}
+  body{margin:0;background:var(--bg);font:14px/1.4 system-ui,Segoe UI,Roboto,Arial;color:var(--ink)}
+  .wrap{max-width:1050px;margin:24px auto;padding:0 16px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .card{background:var(--card);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.06);padding:16px}
+  .kpi{flex:1 1 230px}
+  .kpi h3{margin:0 0 8px 0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .kpi .v{font-size:22px;font-weight:700}
+  .toolbar{display:flex;gap:8px;align-items:center;margin:14px 0}
+  input,select,button,textarea{border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;background:#fff;font:inherit}
+  button{cursor:pointer}
+  button.primary{background:#111;color:#fff}
+  table{width:100%;border-collapse:separate;border-spacing:0 10px}
+  th{font-weight:600;color:var(--muted);text-align:left}
+  td{background:#fff;padding:12px;border-top:1px solid #eee;border-bottom:1px solid #eee}
+  tr td:first-child{border-left:1px solid #eee;border-top-left-radius:12px;border-bottom-left-radius:12px}
+  tr td:last-child{border-right:1px solid #eee;border-top-right-radius:12px;border-bottom-right-radius:12px}
+  .badge{padding:4px 8px;border-radius:999px;font-size:12px}
+  .paid{background:rgba(16,185,129,.12);color:#065f46}
+  .pending{background:rgba(245,158,11,.14);color:#92400e}
+  .right{text-align:right}
+  .actions button{border:none;background:transparent;padding:6px}
+  .drawer{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-start;justify-content:flex-end}
+  .panel{width:420px;max-width:92vw;background:#fff;height:100%;padding:18px 16px 24px 16px}
+  .panel h2{margin:8px 0 12px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Moments Booking</h1>
+
+  <div class="row">
+    <div class="card kpi"><h3>Clients</h3><div class="v" id="kpiClients">0</div></div>
+    <div class="card kpi"><h3>Bookings</h3><div class="v" id="kpiBookings">0</div></div>
+    <div class="card kpi"><h3>Earnings (Paid)</h3><div class="v" id="kpiEarnings">PKR 0</div></div>
+    <div class="card kpi"><h3>Pending</h3><div class="v" id="kpiPending">PKR 0</div></div>
+  </div>
+
+  <div class="toolbar">
+    <input id="q" placeholder="Search bookings... (name/phone/date)" style="flex:1"/>
+    <button class="primary" id="btnNew">+ New Booking</button>
+    <button id="btnExport">Export</button>
+    <input type="file" id="fileImport" accept=".json" hidden>
+    <button id="btnImport">Import</button>
+  </div>
+
+  <div class="card">
+    <table id="tbl">
+      <thead>
+        <tr><th>Client</th><th class="right">Date & Time</th><th class="right">Amount</th><th>Status</th><th class="right">Paid</th><th class="right">Balance</th><th>Actions</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+    <p class="muted" id="empty" style="display:none;margin:12px 6px">No bookings yet.</p>
+  </div>
+</div>
+
+<!-- Drawer -->
+<div class="drawer" id="drawer">
+  <div class="panel">
+    <h2 id="formTitle">Add Booking</h2>
+    <div class="grid">
+      <div><label>Client Name<br><input id="f_name"></label></div>
+      <div><label>Phone<br><input id="f_phone"></label></div>
+      <div><label>Date<br><input id="f_date"></label></div>
+      <div><label>From<br><input id="f_from"></label></div>
+      <div><label>To<br><input id="f_to"></label></div>
+      <div><label>Total Amount (PKR)<br><input id="f_amount" type="number" min="0"></label></div>
+      <div><label>Paid Amount (PKR)<br><input id="f_paid" type="number" min="0" value="0"></label></div>
+      <div><label>Notes<br><input id="f_notes"></label></div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px">
+      <button class="primary" id="btnSave">Save</button>
+      <button id="btnCancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script>
+const SKEY='mfh_data_v1';
+const $$=s=>document.querySelector(s);
+const $$all=s=>[...document.querySelectorAll(s)];
+const state=load();
+
+function load(){ try{ return JSON.parse(localStorage.getItem(SKEY))||{clients:[],bookings:[]}}catch(e){return {clients:[],bookings:[]}} }
+function save(){ localStorage.setItem(SKEY, JSON.stringify(state)); }
+function id(prefix){ return prefix+'_'+Math.random().toString(36).slice(2,8); }
+
+function upsertClient(name,phone){
+  let c=state.clients.find(x=>x.name.trim().toLowerCase()===name.trim().toLowerCase() && x.phone===phone);
+  if(!c){ c={id:id('cl'),name:name.trim(),phone:phone.trim(),notes:""}; state.clients.push(c); }
+  return c.id;
+}
+
+function addOrUpdateBooking(bk){
+  const i=state.bookings.findIndex(x=>x.id===bk.id);
+  if(i>=0) state.bookings[i]=bk; else state.bookings.push(bk);
+  save(); render();
+}
+
+function metrics(){
+  const clients=new Set(state.clients.map(c=>c.id));
+  const earnings=state.bookings.reduce((s,b)=>s+(+b.paid||0),0);
+  const pending=state.bookings.reduce((s,b)=>{const bal=(+b.amount||0)-(+b.paid||0);return s+(bal>0?bal:0)},0);
+  $$('#kpiClients').textContent=clients.size;
+  $$('#kpiBookings').textContent=state.bookings.length;
+  $$('#kpiEarnings').textContent='PKR '+earnings.toLocaleString();
+  $$('#kpiPending').textContent='PKR '+pending.toLocaleString();
+}
+
+function render(){
+  const q=$$('#q').value.trim().toLowerCase();
+  const tb=$$('#tbl tbody'); tb.innerHTML='';
+  const rows=state.bookings
+    .slice().sort((a,b)=> (a.date+a.from).localeCompare(b.date+b.from))
+    .filter(b=>{
+      const c=state.clients.find(x=>x.id===b.clientId)||{name:'',phone:''};
+      const hay=[c.name,c.phone,b.date,b.from,b.to,(b.amount||0),(b.paid||0),b.status].join(' ').toLowerCase();
+      return !q || hay.includes(q);
+    });
+  $$('#empty').style.display=rows.length? 'none':'block';
+  rows.forEach(b=>{
+    const c=state.clients.find(x=>x.id===b.clientId)||{name:'',phone:''};
+    const bal=(+b.amount||0)-(+b.paid||0);
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><strong>${c.name}</strong><div class="muted">${c.phone||''}</div></td>
+      <td class="right">${b.date} • ${b.from}–${b.to}</td>
+      <td class="right">PKR ${(+b.amount||0).toLocaleString()}</td>
+      <td><span class="badge ${bal<=0?'paid':'pending'}">${bal<=0?'Paid':'Pending'}</span></td>
+      <td class="right">PKR ${(+b.paid||0).toLocaleString()}</td>
+      <td class="right">PKR ${Math.max(bal,0).toLocaleString()}</td>
+      <td class="actions">
+        <button title="Mark Paid">✅</button>
+        <button title="Invoice PDF">🧾</button>
+        <button title="Edit">✏️</button>
+        <button title="Delete">🗑️</button>
+      </td>`;
+    const [btnPaid,btnInv,btnEdit,btnDel]=tr.querySelectorAll('button');
+    btnPaid.onclick=()=>{ b.paid=b.amount; addOrUpdateBooking(b); };
+    btnDel.onclick=()=>{ if(confirm('Delete booking?')){ state.bookings=state.bookings.filter(x=>x.id!==b.id); save(); render(); } };
+    btnEdit.onclick=()=>openDrawer(b);
+    btnInv.onclick=()=>invoicePDF(b,c,Math.max(bal,0));
+    tb.appendChild(tr);
+  });
+  metrics();
+}
+
+function openDrawer(bk=null){
+  $$('#drawer').style.display='flex';
+  $$('#formTitle').textContent=bk?'Edit Booking':'Add Booking';
+  const c = bk ? state.clients.find(x=>x.id===bk.clientId) : {name:'',phone:''};
+  $$('#f_name').value=c?.name||''; $$('#f_phone').value=c?.phone||'';
+  $$('#f_date').value=bk?.date||''; $$('#f_from').value=bk?.from||''; $$('#f_to').value=bk?.to||'';
+  $$('#f_amount').value=bk?.amount||''; $$('#f_paid').value=bk?.paid||0; $$('#f_notes').value=bk?.notes||'';
+  $$('#btnSave').onclick=()=>{
+    const name=$$('#f_name').value.trim();
+    const phone=$$('#f_phone').value.trim();
+    const date=$$('#f_date').value; const from=$$('#f_from').value; const to=$$('#f_to').value;
+    const amount=+$$('#f_amount').value||0; const paid=+$$('#f_paid').value||0;
+    const notes=$$('#f_notes').value.trim();
+    if(!name||!date||!from||!to){ alert('Name, Date, From, To are required.'); return; }
+    const clientId=upsertClient(name,phone);
+    addOrUpdateBooking({ id: bk?.id||id('bk'), clientId,date,from,to,amount,paid,notes });
+    closeDrawer();
+  };
+}
+function closeDrawer(){ $$('#drawer').style.display='none'; }
+
+$$('#btnNew').onclick=()=>openDrawer();
+$$('#btnCancel').onclick=closeDrawer;
+
+flatpickr('#f_date',{dateFormat:'Y-m-d'});
+flatpickr('#f_from',{enableTime:true,noCalendar:true,dateFormat:'H:i'});
+flatpickr('#f_to',{enableTime:true,noCalendar:true,dateFormat:'H:i'});
+$$('#q').addEventListener('input',render);
+
+function invoicePDF(b,c,bal){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  doc.setFontSize(16); doc.text('Reservation Voucher', 14, 16);
+  doc.setFontSize(11);
+  doc.text(`From: Moments Farmhouse`,14,26);
+  doc.text(`Bill To: ${c.name} (${c.phone||''})`,14,34);
+  doc.text(`Date: ${b.date}  Time: ${b.from} - ${b.to}`,14,42);
+  doc.text(`Description: Farmhouse Booking`,14,54);
+  doc.text(`Total: PKR ${(+b.amount||0).toLocaleString()}`,14,62);
+  doc.text(`Amount Paid: PKR ${(+b.paid||0).toLocaleString()}`,14,70);
+  doc.text(`Balance Due: PKR ${bal.toLocaleString()}`,14,78);
+  doc.text(`Notes: ${b.notes||''}`,14,88);
+  doc.save(`voucher_${c.name.replace(/\s+/g,'_')}_${b.date}.pdf`);
+}
+
+$$('#btnExport').onclick=()=>{
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='bookings_export.json'; a.click();
+};
+$$('#btnImport').onclick=()=>$$('#fileImport').click();
+$$('#fileImport').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=()=>{ try{ const data=JSON.parse(r.result); if(data.clients && data.bookings){ localStorage.setItem(SKEY, JSON.stringify(data)); Object.assign(state,data); render(); } else alert('Invalid file.'); } catch{ alert('Invalid JSON.'); } };
+  r.readAsText(f);
+};
+
+render();
+</script>
+</body>
+</html>
