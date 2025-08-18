@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Simple Booking & Invoicing</title>
+<title>Simple Booking & Invoicing (with Auth)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
   :root{--bg:#f5f7fb;--card:#fff;--ink:#111;--muted:#6b7280}
@@ -48,7 +48,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Simple Booking & Invoicing</h1>
+  <h1>Moments Booking</h1>
 
   <!-- AUTH -->
   <section id="authBox" class="card auth">
@@ -60,7 +60,7 @@
         <button id="btnLogin" class="primary">Login</button>
         <button id="btnSignup">Sign up</button>
       </div>
-      <p class="muted" style="margin:0">Your data is stored securely per account.</p>
+      <p class="muted" style="margin:0">Your data is stored securely per account. (Header/logo coming later.)</p>
     </div>
   </section>
 
@@ -123,7 +123,7 @@ const SUPABASE_URL = 'https://zzcydkmhxmxmsbvdyglt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6Y3lka21oeG14bXNidmR5Z2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NTQwMjMsImV4cCI6MjA3MTEzMDAyM30.egNDi5EmTkoMW_kcWZwA185UjJFiYIlxftgjUiCZyag';
 // =========================
 
-const supabase = createClient('https://zzcydkmhxmxmsbvdyglt.supabase.co',  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6Y3lka21oeG14bXNidmR5Z2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NTQwMjMsImV4cCI6MjA3MTEzMDAyM30.egNDi5EmTkoMW_kcWZwA185UjJFiYIlxftgjUiCZyag');
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Local UI state (mirrors DB rows)
 const state = { clients: [], bookings: [], user: null };
