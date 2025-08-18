@@ -1,363 +1,151 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Booking App (Supabase)</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+  <meta charset="UTF-8">
+  <title>Booking System</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
   <style>
-    :root { --muted:#6b7280 }
-    body{background:#f5f7fb}
-    header.container{display:flex;align-items:center;justify-content:space-between;gap:1rem}
-    nav.tabs{display:flex;gap:.5rem}
-    .card{background:#fff;border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.06);padding:16px}
-    .grid{display:grid;gap:12px}
-    .grid.kpi{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
-    .muted{color:var(--muted)}
-    .right{text-align:right}
-    .hidden{display:none}
-    #logoPreview{height:40px;object-fit:contain}
-    table{width:100%}
-    tbody tr td{background:#fff}
-    tbody tr td:first-child{border-top-left-radius:10px;border-bottom-left-radius:10px}
-    tbody tr td:last-child{border-top-right-radius:10px;border-bottom-right-radius:10px}
-    .pill{padding:.2rem .6rem;border-radius:999px;font-size:.8rem}
-    .paid{background:rgba(16,185,129,.12);color:#065f46}
-    .pending{background:rgba(245,158,11,.14);color:#92400e}
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    nav button { margin: 5px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #f0f0f0; }
+    #companyLogo { height: 50px; margin-bottom: 10px; }
+    #authForm { margin-bottom: 20px; }
   </style>
-  <!-- Supabase JS v2 -->
-  <script type="module">
-    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-    import * as XLSX from "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/+esm";
-
-    // ====== EDIT THESE ======
-    const SUPABASE_URL = "https://zzcydkmhxmxmsbvdyglt.supabase.co"; // <-- replace
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6Y3lka21oeG14bXNidmR5Z2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NTQwMjMsImV4cCI6MjA3MTEzMDAyM30.egNDi5EmTkoMW_kcWZwA185UjJFiYIlxftgjUiCZyag"; // <-- replace
-    // =========================
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    // Elements
-    const els = (sel)=>document.querySelector(sel);
-    const show = (el, on)=> el.classList[on?"remove":"add"]("hidden");
-
-    // Routing
-    window.addEventListener('hashchange', renderRoute);
-
-    // Auth UI
-    els('#btnSignup').onclick = async()=>{
-      const email=els('#authEmail').value.trim();
-      const password=els('#authPass').value.trim();
-      if(!email||!password) return alert('Email & password required');
-      const {error} = await supabase.auth.signUp({ email, password });
-      if(error) alert(error.message); else alert('Sign up successful. Check your email if confirmation is enabled.');
-    };
-    els('#btnLogin').onclick = async()=>{
-      const email=els('#authEmail').value.trim();
-      const password=els('#authPass').value.trim();
-      const {error} = await supabase.auth.signInWithPassword({ email, password });
-      if(error) alert(error.message);
-    };
-    els('#btnLogout').onclick = async()=>{ await supabase.auth.signOut(); };
-
-    // Logo upload
-    els('#logoFile').addEventListener('change', async (e)=>{
-      const file = e.target.files?.[0];
-      if(!file) return;
-      const { data: { user } } = await supabase.auth.getUser();
-      if(!user) return alert('Not logged in');
-      const path = `${user.id}.png`;
-      // Ensure bucket exists in your project named 'logos'
-      await supabase.storage.from('logos').upload(path, file, { upsert:true, cacheControl:'3600' }).catch(()=>{});
-      const { data: { publicUrl } } = supabase.storage.from('logos').getPublicUrl(path);
-      // Save to profile
-      await supabase.from('profiles').upsert({ id:user.id, logo_url: publicUrl });
-      els('#logoPreview').src = publicUrl;
-      alert('Logo updated!');
-    });
-
-    // Data helpers
-    async function ensureProfile(){
-      const { data: { user } } = await supabase.auth.getUser();
-      if(!user) return null;
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-      if(error) console.error(error);
-      if(!data){
-        await supabase.from('profiles').insert({ id:user.id });
-        return { id:user.id };
-      }
-      return data;
-    }
-
-    async function loadLogo(){
-      const prof = await ensureProfile();
-      if(prof?.logo_url){ els('#logoPreview').src = prof.logo_url; }
-    }
-
-    // Clients CRUD
-    els('#btnAddClient').onclick = async()=>{
-      const name = prompt('Client name?');
-      if(!name) return;
-      const phone = prompt('Phone number?')||'';
-      const { error } = await supabase.from('clients').insert({ name, phone });
-      if(error) return alert(error.message);
-      await renderClients();
-    };
-
-    async function renderClients(){
-      const { data, error } = await supabase.from('clients').select('*').order('name');
-      if(error){ console.error(error); return; }
-      const q = (els('#qClients').value||'').toLowerCase();
-      const tbody = els('#clientsBody'); tbody.innerHTML='';
-      (data||[]).filter(c=>!q||`${c.name} ${c.phone}`.toLowerCase().includes(q)).forEach(c=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td><strong>${c.name}</strong></td><td>${c.phone||''}</td>`;
-        tbody.appendChild(tr);
-      });
-      els('#clientsCount').textContent = (data||[]).length;
-    }
-
-    els('#qClients').addEventListener('input', renderClients);
-
-    // Bookings CRUD
-    els('#btnNewBooking').onclick = ()=> openBookingForm();
-
-    function openBookingForm(b=null){
-      els('#bkForm').reset();
-      els('#bkId').value = b?.id||'';
-      els('#bkName').value = b?.client_name||'';
-      els('#bkPhone').value = b?.client_phone||'';
-      els('#bkDate').value = b?.date||'';
-      els('#bkFrom').value = b?.from_time||'';
-      els('#bkTo').value = b?.to_time||'';
-      els('#bkAmount').value = b?.amount||0;
-      els('#bkPaid').value = b?.paid||0;
-      els('#bkNotes').value = b?.notes||'';
-      els('#bookingModal').showModal();
-    }
-
-    els('#bkSave').onclick = async()=>{
-      const id = els('#bkId').value;
-      const name = els('#bkName').value.trim();
-      const phone = els('#bkPhone').value.trim();
-      const date = els('#bkDate').value; const from=els('#bkFrom').value; const to=els('#bkTo').value;
-      const amount = Number(els('#bkAmount').value||0); const paid=Number(els('#bkPaid').value||0);
-      const notes = els('#bkNotes').value.trim();
-      if(!name||!date||!from||!to) return alert('Name, Date, From, To are required');
-      // Upsert client (by exact name+phone for simplicity)
-      let { data:existing } = await supabase.from('clients').select('id').eq('name', name).eq('phone', phone).maybeSingle();
-      if(!existing){ const ins = await supabase.from('clients').insert({ name, phone }).select('id').single(); existing = ins.data; }
-      const row = { client_id: existing.id, client_name:name, client_phone:phone, date, from_time:from, to_time:to, amount, paid, notes };
-      if(id) await supabase.from('bookings').update(row).eq('id', id);
-      else await supabase.from('bookings').insert(row);
-      els('#bookingModal').close();
-      await renderBookings();
-    };
-
-    async function renderBookings(){
-      const { data, error } = await supabase.from('bookings').select('*').order('date');
-      if(error){ console.error(error); return; }
-      const q = (els('#qBookings').value||'').toLowerCase();
-      const tbody = els('#bookingsBody'); tbody.innerHTML='';
-      let earnings=0, pending=0; let count=0; const clientsSet = new Set();
-      (data||[]).filter(b=>{
-        const hay = `${b.client_name} ${b.client_phone} ${b.date} ${b.from_time} ${b.to_time} ${b.amount} ${b.paid}`.toLowerCase();
-        return !q || hay.includes(q);
-      }).forEach(b=>{
-        count++; clientsSet.add(b.client_id);
-        earnings += (b.paid||0);
-        const balance = Math.max((b.amount||0)-(b.paid||0),0); if(balance>0) pending+=balance;
-        const tr=document.createElement('tr');
-        tr.innerHTML = `
-          <td><strong>${b.client_name}</strong><div class="muted">${b.client_phone||''}</div></td>
-          <td class="right">${b.date} • ${b.from_time}–${b.to_time}</td>
-          <td class="right">PKR ${(b.amount||0).toLocaleString()}</td>
-          <td>${balance<=0?'<span class="pill paid">Paid</span>':'<span class="pill pending">Pending</span>'}</td>
-          <td class="right">PKR ${(b.paid||0).toLocaleString()}</td>
-          <td class="right">PKR ${balance.toLocaleString()}</td>
-          <td class="right">
-            <button data-act="paid">Mark Paid</button>
-            <button data-act="pdf">Invoice</button>
-            <button data-act="edit">Edit</button>
-            <button data-act="del">Delete</button>
-          </td>`;
-        tr.querySelector('[data-act="paid"]').onclick = async()=>{
-          await supabase.from('bookings').update({ paid: b.amount }).eq('id', b.id); renderBookings();
-        };
-        tr.querySelector('[data-act="edit"]').onclick = ()=> openBookingForm(b);
-        tr.querySelector('[data-act="del"]').onclick = async()=>{ if(confirm('Delete booking?')){ await supabase.from('bookings').delete().eq('id', b.id); renderBookings(); } };
-        tr.querySelector('[data-act="pdf"]').onclick = ()=> makePDF(b);
-        tbody.appendChild(tr);
-      });
-      // KPIs
-      els('#kpiClients').textContent = clientsSet.size;
-      els('#kpiBookings').textContent = count;
-      els('#kpiEarnings').textContent = 'PKR '+earnings.toLocaleString();
-      els('#kpiPending').textContent = 'PKR '+pending.toLocaleString();
-      // Empty
-      show(els('#emptyBookings'), (data||[]).length===0);
-    }
-
-    // Export Excel
-    els('#btnExportExcel').onclick = async()=>{
-      const { data: bookings } = await supabase.from('bookings').select('*');
-      const { data: clients } = await supabase.from('clients').select('*');
-      const wb = XLSX.utils.book_new();
-      const sh1 = XLSX.utils.json_to_sheet(bookings || []);
-      const sh2 = XLSX.utils.json_to_sheet(clients || []);
-      XLSX.utils.book_append_sheet(wb, sh1, 'Bookings');
-      XLSX.utils.book_append_sheet(wb, sh2, 'Clients');
-      XLSX.writeFile(wb, 'export.xlsx');
-    };
-
-    // Simple hash routing
-    function renderRoute(){
-      const page = location.hash.replace('#','') || 'dashboard';
-      show(els('#pageDashboard'), page==='dashboard');
-      show(els('#pageClients'), page==='clients');
-      if(page==='dashboard') renderBookings();
-      if(page==='clients') renderClients();
-    }
-
-    // Auth state listener
-    supabase.auth.onAuthStateChange(async (event, session) => {
-      const loggedIn = !!session?.user;
-      show(els('#authed'), loggedIn);
-      show(els('#authBox'), !loggedIn);
-      if(loggedIn){
-        await loadLogo();
-        renderRoute();
-      }
-    });
-
-    // Initial
-    (async()=>{
-      const { data: { session } } = await supabase.auth.getSession();
-      const loggedIn = !!session?.user;
-      show(els('#authed'), loggedIn);
-      show(els('#authBox'), !loggedIn);
-      if(loggedIn){ await loadLogo(); }
-      renderRoute();
-    })();
-
-    // PDF (client-side minimal)
-    import { jsPDF } from "https://cdn.jsdelivr.net/npm/jspdf@2.5.1/+esm";
-    function makePDF(b){
-      const doc=new jsPDF();
-      const balance=Math.max((b.amount||0)-(b.paid||0),0);
-      doc.setFontSize(16); doc.text('Reservation Voucher',14,16);
-      doc.setFontSize(11);
-      doc.text('From: Your Business',14,26);
-      doc.text(`Bill To: ${b.client_name} (${b.client_phone||''})`,14,34);
-      doc.text(`Date: ${b.date}  Time: ${b.from_time}-${b.to_time}`,14,42);
-      doc.text(`Total: PKR ${(b.amount||0).toLocaleString()}`,14,54);
-      doc.text(`Paid: PKR ${(b.paid||0).toLocaleString()}`,14,62);
-      doc.text(`Balance: PKR ${balance.toLocaleString()}`,14,70);
-      if(b.notes) doc.text(`Notes: ${b.notes}`,14,80);
-      doc.save(`voucher_${b.client_name.replace(/\s+/g,'_')}_${b.date}.pdf`);
-    }
-    window.makePDF = makePDF; // in case needed
-  </script>
 </head>
 <body>
-  <header class="container">
-    <div class="flex">
-      <img id="logoPreview" src="" alt="logo" />
-      <h2 style="margin:0 0 0 8px">Booking App</h2>
-    </div>
-    <nav class="tabs">
-      <a href="#dashboard">Dashboard</a>
-      <a href="#clients">Clients</a>
-    </nav>
-    <div>
-      <input type="file" id="logoFile" accept="image/*" class="hidden" />
-      <button id="btnPickLogo" onclick="document.getElementById('logoFile').click()">Upload Logo</button>
-      <button id="btnLogout" class="secondary">Logout</button>
-    </div>
-  </header>
+  <h1>Booking System</h1>
+  <img id="companyLogo" src="default.png" alt="Logo">
+  <input type="file" id="logoUpload" accept="image/*" style="display:none">
 
-  <main class="container">
-    <!-- Auth Box -->
-    <section id="authBox" class="card hidden">
-      <h3>Login or Sign up</h3>
-      <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
-        <input id="authEmail" type="email" placeholder="Email" />
-        <input id="authPass" type="password" placeholder="Password" />
-        <button id="btnLogin">Login</button>
-        <button id="btnSignup" class="secondary">Sign up</button>
-      </div>
-      <p class="muted">After login, your data is stored in a secure database and isolated per account.</p>
-    </section>
+  <div id="authForm">
+    <h3>Login / Register</h3>
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+    <button onclick="register()">Register</button>
+    <button onclick="logout()">Logout</button>
+  </div>
 
-    <!-- Authed Area -->
-    <section id="authed" class="hidden">
-      <!-- Dashboard -->
-      <section id="pageDashboard" class="grid" style="gap:16px">
-        <div class="grid kpi">
-          <article class="card"><header>Clients</header><strong id="kpiClients">0</strong></article>
-          <article class="card"><header>Bookings</header><strong id="kpiBookings">0</strong></article>
-          <article class="card"><header>Earnings (Paid)</header><strong id="kpiEarnings">PKR 0</strong></article>
-          <article class="card"><header>Pending</header><strong id="kpiPending">PKR 0</strong></article>
-        </div>
+  <nav>
+    <button onclick="showPage('bookings')">Bookings</button>
+    <button onclick="showPage('clients')">Clients</button>
+    <button onclick="exportExcel()">Export Excel</button>
+    <button onclick="document.getElementById('logoUpload').click()">Upload Logo</button>
+  </nav>
 
-        <div class="card">
-          <div class="grid" style="grid-template-columns:1fr auto auto auto;align-items:center">
-            <input id="qBookings" placeholder="Search bookings (name/phone/date)" oninput="this.dispatchEvent(new Event('input'))" />
-            <button id="btnNewBooking">+ New Booking</button>
-            <button id="btnExportExcel">Export Excel</button>
-          </div>
-          <table>
-            <thead>
-              <tr><th>Client</th><th class="right">Date & Time</th><th class="right">Amount</th><th>Status</th><th class="right">Paid</th><th class="right">Balance</th><th class="right">Actions</th></tr>
-            </thead>
-            <tbody id="bookingsBody"></tbody>
-          </table>
-          <p id="emptyBookings" class="muted" style="display:none">No bookings yet.</p>
-        </div>
-      </section>
+  <div id="bookingsPage">
+    <h2>Bookings</h2>
+    <table id="tblBookings">
+      <thead><tr><th>Date</th><th>Client</th><th>Amount</th><th>Paid</th><th>Notes</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-      <!-- Clients Page -->
-      <section id="pageClients" class="grid hidden" style="gap:16px">
-        <div class="card">
-          <div class="grid" style="grid-template-columns:1fr auto auto;align-items:center">
-            <input id="qClients" placeholder="Search clients (name/phone)" />
-            <button id="btnAddClient">+ Add Client</button>
-            <span class="muted">Total: <strong id="clientsCount">0</strong></span>
-          </div>
-          <table>
-            <thead><tr><th>Name</th><th>Phone</th></tr></thead>
-            <tbody id="clientsBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </section>
-  </main>
+  <div id="clientsPage" style="display:none">
+    <h2>Clients</h2>
+    <table id="tblClients">
+      <thead><tr><th>Name</th><th>Phone</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-  <!-- Booking Modal -->
-  <dialog id="bookingModal" style="max-width:560px">
-    <article>
-      <header>
-        <h4>Booking</h4>
-      </header>
-      <form id="bkForm" method="dialog">
-        <input id="bkId" type="hidden" />
-        <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
-          <input id="bkName" placeholder="Client Name" required />
-          <input id="bkPhone" placeholder="Phone" />
-          <input id="bkDate" type="date" required />
-          <input id="bkFrom" type="time" required />
-          <input id="bkTo" type="time" required />
-          <input id="bkAmount" type="number" min="0" placeholder="Total Amount (PKR)" />
-          <input id="bkPaid" type="number" min="0" placeholder="Paid (PKR)" />
-          <input id="bkNotes" placeholder="Notes" />
-        </div>
-        <footer>
-          <button id="bkSave" type="button">Save</button>
-          <button onclick="document.getElementById('bookingModal').close()" class="secondary" type="button">Cancel</button>
-        </footer>
-      </form>
-    </article>
-  </dialog>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+  const supabase = createClient("YOUR_SUPABASE_URL", "YOUR_SUPABASE_ANON_KEY");
+  let currentUser = null;
+
+  // Auth
+  async function register() {
+    let email = document.getElementById("email").value;
+    let pw = document.getElementById("password").value;
+    let { error } = await supabase.auth.signUp({ email, password: pw });
+    if (error) alert(error.message); else alert("Check your email to confirm.");
+  }
+
+  async function login() {
+    let email = document.getElementById("email").value;
+    let pw = document.getElementById("password").value;
+    let { data, error } = await supabase.auth.signInWithPassword({ email, password: pw });
+    if (error) alert(error.message);
+    else { currentUser = data.user; init(); }
+  }
+
+  async function logout() {
+    await supabase.auth.signOut();
+    currentUser=null;
+    location.reload();
+  }
+
+  // Logo upload
+  document.getElementById("logoUpload").onchange = async (e) => {
+    if (!currentUser) return;
+    const file = e.target.files[0];
+    const path = `${currentUser.id}/logo.png`;
+    let { error } = await supabase.storage.from("logos").upload(path, file, { upsert:true });
+    if (!error) {
+      let { data } = supabase.storage.from("logos").getPublicUrl(path);
+      document.getElementById("companyLogo").src = data.publicUrl;
+      await supabase.from("profiles").upsert({ id: currentUser.id, logo_url: data.publicUrl });
+    }
+  };
+
+  // UI Switching
+  window.showPage = (p) => {
+    document.getElementById("bookingsPage").style.display = (p==="bookings")?"block":"none";
+    document.getElementById("clientsPage").style.display = (p==="clients")?"block":"none";
+    if (p==="clients") loadClients();
+    if (p==="bookings") loadBookings();
+  }
+
+  // Load Data
+  async function loadBookings() {
+    if (!currentUser) return;
+    let { data } = await supabase.from("bookings").select("date, notes, amount, paid, clients(name)").eq("user_id", currentUser.id);
+    const tb=document.querySelector("#tblBookings tbody");
+    tb.innerHTML="";
+    data.forEach(b=>{
+      let tr=document.createElement("tr");
+      tr.innerHTML=`<td>${b.date}</td><td>${b.clients?.name||""}</td><td>${b.amount}</td><td>${b.paid}</td><td>${b.notes}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+
+  async function loadClients() {
+    if (!currentUser) return;
+    let { data } = await supabase.from("clients").select("name,phone").eq("user_id", currentUser.id);
+    const tb=document.querySelector("#tblClients tbody");
+    tb.innerHTML="";
+    data.forEach(c=>{
+      let tr=document.createElement("tr");
+      tr.innerHTML=`<td>${c.name}</td><td>${c.phone}</td>`;
+      tb.appendChild(tr);
+    });
+  }
+
+  // Export
+  window.exportExcel = async () => {
+    if (!currentUser) return;
+    let { data } = await supabase.from("bookings").select("*").eq("user_id", currentUser.id);
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Bookings");
+    XLSX.writeFile(wb, "bookings.xlsx");
+  };
+
+  // Init
+  async function init() {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) {
+      currentUser = data.user;
+      showPage("bookings");
+    }
+  }
+  init();
+
+</script>
 </body>
 </html>
-
