@@ -275,13 +275,19 @@ async function loadInitialData() {
       .get();
     state.clients = clientsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     
-    // Set up real-time listener for bookings
+    // Set up real-time listener for bookings (removed orderBy; add error handler)
+    if (state.unsubscribe) state.unsubscribe();
     state.unsubscribe = db.collection('bookings')
       .where('userId', '==', state.user.uid)
-      .orderBy('date')
-      .onSnapshot((snapshot) => {
-        state.bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        render();
+      .onSnapshot({
+        next: (snapshot) => {
+          state.bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          render();
+        },
+        error: (err) => {
+          console.error('Bookings listener error:', err);
+          showToast('Error loading bookings: ' + err.message);
+        }
       });
   } catch (error) {
     console.error('Initial data load error:', error);
@@ -323,6 +329,7 @@ function render() {
       
       return matchesSearch && matchesStatus;
     })
+    // client-side sort by date + start time
     .sort((a, b) => (a.date + a.from_time).localeCompare(b.date + b.from_time));
   
   $$('#empty').style.display = filtered.length ? 'none' : 'block';
