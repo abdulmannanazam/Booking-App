@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Simple Booking & Invoicing (with Firebase)</title>
+<title>Booking & Invoicing System</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
   :root{--bg:#f5f7fb;--card:#fff;--ink:#111;--muted:#6b7280;--primary:#4285f4;--danger:#db4437}
@@ -41,12 +41,9 @@
   .muted{color:var(--muted)}
   .loading{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,.1);border-radius:50%;border-top-color:var(--primary);animation:spin 1s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
-  /* Auth box */
   .auth{max-width:460px;margin:32px auto;padding:24px}
   .hidden{display:none}
-  /* Toast */
   .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 16px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:1000;display:none}
-  /* Mobile tweaks */
   @media (max-width: 720px){
     .grid{grid-template-columns:1fr}
     .toolbar{flex-direction:column;align-items:stretch}
@@ -153,7 +150,7 @@ const app = firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-// Local UI state
+// State management
 const state = { clients: [], bookings: [], user: null, unsubscribe: null };
 const $$ = (s) => document.querySelector(s);
 
@@ -164,6 +161,11 @@ function showToast(message, duration = 3000) {
   toast.style.display = 'block';
   setTimeout(() => { toast.style.display = 'none'; }, duration);
 }
+
+// Initialize date/time pickers
+flatpickr('#f_date', { dateFormat: 'Y-m-d' });
+flatpickr('#f_from', { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true });
+flatpickr('#f_to', { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true });
 
 // ---------- Auth ----------
 $$('#btnSignup').onclick = async () => {
@@ -230,88 +232,60 @@ $$('#btnLogout').onclick = async () => {
   }
 };
 
-// Auth state listener
-auth.onAuthStateChanged((user) => {
-  state.user = user;
-  $$('#authBox').classList.toggle('hidden', !!user);
-  $$('#app').classList.toggle('hidden', !user);
-  
-  if (user) {
-    if (state.unsubscribe) state.unsubscribe(); // Clean up previous listener
-    loadInitialData();
-  } else {
-    if (state.unsubscribe) state.unsubscribe();
-    state.clients = [];
-    state.bookings = [];
-    render();
-  }
-});
-
 // ---------- Data Operations ----------
-async function loadInitialData() {
-  // Load clients
-  const clientsSnapshot = await db.collection('clients')
-    .where('userId', '==', state.user.uid)
-    .get();
-  state.clients = clientsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  
-  // Set up real-time listener for bookings
-  state.unsubscribe = db.collection('bookings')
-    .where('userId', '==', state.user.uid)
-    .orderBy('date')
-    .onSnapshot((snapshot) => {
-      state.bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      render();
-    });
-}
-
 async function upsertClient(name, phone) {
-  const existingClient = state.clients.find(c => 
-    c.name.toLowerCase() === name.toLowerCase() && 
-    (c.phone || '') === (phone || '')
-  );
-  
-  if (existingClient) return existingClient.id;
-  
-  const docRef = await db.collection('clients').add({
-    name: name.trim(),
-    phone: (phone || '').trim(),
-    userId: state.user.uid,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp()
-  });
-  
-  state.clients.push({ id: docRef.id, name, phone, userId: state.user.uid });
-  return docRef.id;
-}
-
-async function addOrUpdateBooking(booking) {
   try {
-    if (booking.id) {
-      await db.collection('bookings').doc(booking.id).update(booking);
-      showToast('Booking updated successfully');
-    } else {
-      await db.collection('bookings').add({
-        ...booking,
-        userId: state.user.uid,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      showToast('Booking created successfully');
-    }
+    // Check for existing client
+    const existing = state.clients.find(c => 
+      c.name.toLowerCase() === name.toLowerCase() && 
+      (c.phone || '') === (phone || '')
+    );
+    if (existing) return existing.id;
+
+    // Create new client
+    const docRef = await db.collection('clients').add({
+      name: name.trim(),
+      phone: (phone || '').trim(),
+      userId: auth.currentUser.uid,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    
+    // Update local state
+    const newClient = {
+      id: docRef.id,
+      name,
+      phone,
+      userId: auth.currentUser.uid
+    };
+    state.clients.push(newClient);
+    
+    return docRef.id;
   } catch (error) {
-    console.error('Error saving booking:', error);
-    showToast('Error saving booking: ' + error.message);
+    console.error('Client upsert error:', error);
+    showToast('Error saving client');
+    throw error;
   }
 }
 
-async function deleteBooking(id) {
-  if (!confirm('Delete this booking?')) return;
-  
+async function loadInitialData() {
   try {
-    await db.collection('bookings').doc(id).delete();
-    showToast('Booking deleted successfully');
+    // Load clients
+    const clientsSnapshot = await db.collection('clients')
+      .where('userId', '==', state.user.uid)
+      .get();
+    state.clients = clientsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    // Set up real-time listener for bookings
+    state.unsubscribe = db.collection('bookings')
+      .where('userId', '==', state.user.uid)
+      .orderBy('date')
+      .onSnapshot((snapshot) => {
+        state.bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        render();
+      });
   } catch (error) {
-    console.error('Error deleting booking:', error);
-    showToast('Error deleting booking: ' + error.message);
+    console.error('Initial data load error:', error);
+    showToast('Error loading data');
   }
 }
 
@@ -372,9 +346,17 @@ function render() {
       </td>`;
     
     const [btnPaid, btnInv, btnEdit, btnDel] = tr.querySelectorAll('button');
-    btnPaid.onclick = async () => { await addOrUpdateBooking({ ...b, paid: b.amount }); };
-    btnDel.onclick = async () => { await deleteBooking(b.id); };
-    btnEdit.onclick = () => openDrawer(b);
+    btnPaid.onclick = async () => { 
+      await db.collection('bookings').doc(b.id).update({ paid: b.amount });
+      showToast('Marked as paid');
+    };
+    btnDel.onclick = async () => { 
+      if (confirm('Delete this booking?')) {
+        await db.collection('bookings').doc(b.id).delete();
+        showToast('Booking deleted');
+      }
+    };
+    btnEdit.onclick = () => openBookingModal(b);
     btnInv.onclick = () => invoicePDF(b, client, Math.max(bal, 0));
     
     tb.appendChild(tr);
@@ -383,8 +365,8 @@ function render() {
   metrics();
 }
 
-// ---------- Form Handling ----------
-function openDrawer(booking = null) {
+// ---------- Booking Form ----------
+function openBookingModal(booking = null) {
   $$('#drawer').style.display = 'flex';
   $$('#formTitle').textContent = booking ? 'Edit Booking' : 'Add Booking';
   $$('#btnDelete').classList.toggle('hidden', !booking);
@@ -403,47 +385,77 @@ function openDrawer(booking = null) {
   $$('#btnSave')._bookingId = booking?.id;
 }
 
-function closeDrawer() { 
+function closeBookingModal() { 
   $$('#drawer').style.display = 'none'; 
   $$('#btnSave')._bookingId = null;
 }
 
-$$('#btnNew').onclick = () => openDrawer();
-$$('#btnCancel').onclick = closeDrawer;
+$$('#btnNew').onclick = () => openBookingModal();
+$$('#btnCancel').onclick = closeBookingModal;
 
-$$('#btnSave').onclick = async () => {
+$$('#btnSave').onclick = async (e) => {
+  e.preventDefault();
+  
+  // Get form values
   const name = $$('#f_name').value.trim();
   const phone = $$('#f_phone').value.trim();
   const date = $$('#f_date').value;
   const from = $$('#f_from').value;
   const to = $$('#f_to').value;
-  const amount = +$$('#f_amount').value || 0;
-  const paid = +$$('#f_paid').value || 0;
+  const amount = parseFloat($$('#f_amount').value) || 0;
+  const paid = parseFloat($$('#f_paid').value) || 0;
   const notes = $$('#f_notes').value.trim();
-  
+
+  // Validate required fields
   if (!name || !date || !from || !to) {
     showToast('Name, Date, From, and To are required');
     return;
   }
-  
+
+  // Validate time
+  if (from >= to) {
+    showToast('End time must be after start time');
+    return;
+  }
+
   $$('#btnSave').disabled = true;
   $$('#btnSave').innerHTML = '<span class="loading"></span> Saving...';
-  
+
   try {
+    // First upsert the client
     const clientId = await upsertClient(name, phone);
-    await addOrUpdateBooking({
-      id: $$('#btnSave')._bookingId,
+    
+    // Prepare booking data
+    const bookingData = {
       clientId,
       date,
       from_time: from,
       to_time: to,
       amount,
       paid,
-      notes
-    });
-    closeDrawer();
+      notes,
+      userId: auth.currentUser.uid,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+
+    // Add createdAt for new bookings
+    if (!$$('#btnSave')._bookingId) {
+      bookingData.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    }
+
+    // Save to Firestore
+    if ($$('#btnSave')._bookingId) {
+      await db.collection('bookings').doc($$('#btnSave')._bookingId).update(bookingData);
+      showToast('Booking updated!');
+    } else {
+      await db.collection('bookings').add(bookingData);
+      showToast('Booking created!');
+    }
+    
+    closeBookingModal();
   } catch (error) {
-    showToast(error.message);
+    console.error('Save error:', error);
+    showToast('Error saving: ' + error.message);
   } finally {
     $$('#btnSave').disabled = false;
     $$('#btnSave').textContent = 'Save';
@@ -452,8 +464,17 @@ $$('#btnSave').onclick = async () => {
 
 $$('#btnDelete').onclick = async () => {
   if (!$$('#btnSave')._bookingId) return;
-  await deleteBooking($$('#btnSave')._bookingId);
-  closeDrawer();
+  
+  if (confirm('Delete this booking permanently?')) {
+    try {
+      await db.collection('bookings').doc($$('#btnSave')._bookingId).delete();
+      showToast('Booking deleted');
+      closeBookingModal();
+    } catch (error) {
+      console.error('Delete error:', error);
+      showToast('Error deleting: ' + error.message);
+    }
+  }
 };
 
 // ---------- PDF Invoice ----------
@@ -569,20 +590,25 @@ $$('#btnExportExcel').onclick = async () => {
   }
 };
 
-// ---------- Initialize UI ----------
-flatpickr('#f_date', { dateFormat: 'Y-m-d' });
-flatpickr('#f_from', { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true });
-flatpickr('#f_to', { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true });
-
-$$('#q').addEventListener('input', render);
-$$('#filterStatus').addEventListener('change', render);
-
-// Check auth state on load
+// ---------- Initialize App ----------
 auth.onAuthStateChanged((user) => {
+  state.user = user;
+  $$('#authBox').classList.toggle('hidden', !!user);
+  $$('#app').classList.toggle('hidden', !user);
+  
   if (user) {
     loadInitialData();
+  } else {
+    if (state.unsubscribe) state.unsubscribe();
+    state.clients = [];
+    state.bookings = [];
+    render();
   }
 });
+
+// Initialize search/filter listeners
+$$('#q').addEventListener('input', render);
+$$('#filterStatus').addEventListener('change', render);
 </script>
 </body>
 </html>
