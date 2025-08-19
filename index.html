@@ -3,242 +3,55 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Booking & Invoicing System</title>
+<title>Simple Booking & Invoicing (with Firebase)</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 <style>
-  :root {
-    --bg: #f5f7fb;
-    --card: #fff;
-    --ink: #111;
-    --muted: #6b7280;
-    --primary: #2563eb;
-    --success: #16a34a;
-    --warning: #d97706;
-    --danger: #dc2626;
-  }
-  * { box-sizing: border-box; margin: 0; padding: 0 }
-  body {
-    margin: 0;
-    background: var(--bg);
-    font: 14px/1.4 system-ui, Segoe UI, Roboto, Arial;
-    color: var(--ink);
-    min-height: 100vh;
-  }
-  .wrap {
-    max-width: 1050px;
-    margin: 24px auto;
-    padding: 0 16px;
-  }
-  .row {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
-  .card {
-    background: var(--card);
-    border-radius: 14px;
-    box-shadow: 0 6px 24px rgba(0,0,0,.06);
-    padding: 16px;
-  }
-  .kpi {
-    flex: 1 1 230px;
-  }
-  .kpi h3 {
-    margin: 0 0 8px 0;
-    font-size: 13px;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: .04em;
-  }
-  .kpi .v {
-    font-size: 22px;
-    font-weight: 700;
-  }
-  .toolbar {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    margin: 14px 0;
-    flex-wrap: wrap;
-  }
-  input, select, button, textarea {
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    padding: 10px 12px;
-    background: #fff;
-    font: inherit;
-    min-width: 120px;
-  }
-  button {
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;
-  }
-  button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-  button.primary {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-  }
-  button.primary:hover {
-    background: #1d4ed8;
-  }
-  button.danger {
-    background: var(--danger);
-    color: #fff;
-    border-color: var(--danger);
-  }
-  button.danger:hover {
-    background: #b91c1c;
-  }
-  table {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 0 10px;
-  }
-  th {
-    font-weight: 600;
-    color: var(--muted);
-    text-align: left;
-    padding: 8px 12px;
-  }
-  td {
-    background: #fff;
-    padding: 12px;
-    border-top: 1px solid #eee;
-    border-bottom: 1px solid #eee;
-    vertical-align: top;
-  }
-  tr td:first-child {
-    border-left: 1px solid #eee;
-    border-top-left-radius: 12px;
-    border-bottom-left-radius: 12px;
-  }
-  tr td:last-child {
-    border-right: 1px solid #eee;
-    border-top-right-radius: 12px;
-    border-bottom-right-radius: 12px;
-  }
-  .badge {
-    padding: 4px 8px;
-    border-radius: 999px;
-    font-size: 12px;
-    display: inline-block;
-  }
-  .paid {
-    background: rgba(16,185,129,.12);
-    color: #065f46;
-  }
-  .pending {
-    background: rgba(245,158,11,.14);
-    color: #92400e;
-  }
-  .right {
-    text-align: right;
-  }
-  .actions {
-    display: flex;
-    gap: 4px;
-    flex-wrap: wrap;
-  }
-  .actions button {
-    border: none;
-    background: transparent;
-    padding: 6px;
-    border-radius: 6px;
-    font-size: 16px;
-  }
-  .actions button:hover {
-    background: rgba(0,0,0,.05);
-  }
-  .drawer {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,.4);
-    display: none;
-    align-items: flex-start;
-    justify-content: flex-end;
-    z-index: 100;
-  }
-  .panel {
-    width: 420px;
-    max-width: 92vw;
-    background: #fff;
-    height: 100%;
-    padding: 18px 16px 24px 16px;
-    overflow-y: auto;
-  }
-  .panel h2 {
-    margin: 8px 0 12px;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-  }
-  .muted {
-    color: var(--muted);
-  }
-  .loading {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(0,0,0,.1);
-    border-radius: 50%;
-    border-top-color: var(--primary);
-    animation: spin 1s linear infinite;
-    vertical-align: middle;
-    margin-right: 6px;
-  }
-  @keyframes spin {
-    to { transform: rotate(360deg) }
-  }
+  :root{--bg:#f5f7fb;--card:#fff;--ink:#111;--muted:#6b7280;--primary:#4285f4;--danger:#db4437}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);font:14px/1.4 system-ui,Segoe UI,Roboto,Arial;color:var(--ink)}
+  .wrap{max-width:1050px;margin:24px auto;padding:0 16px}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .card{background:var(--card);border-radius:14px;box-shadow:0 6px 24px rgba(0,0,0,.06);padding:16px}
+  .kpi{flex:1 1 230px}
+  .kpi h3{margin:0 0 8px 0;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+  .kpi .v{font-size:22px;font-weight:700}
+  .toolbar{display:flex;gap:8px;align-items:center;margin:14px 0;flex-wrap:wrap}
+  input,select,button,textarea{border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;background:#fff;font:inherit}
+  button{cursor:pointer;transition:all 0.2s}
+  button:disabled{opacity:0.6;cursor:not-allowed}
+  button.primary{background:var(--primary);color:#fff;border-color:var(--primary)}
+  button.primary:hover{background:#3367d6}
+  button.danger{background:var(--danger);color:#fff;border-color:var(--danger)}
+  table{width:100%;border-collapse:separate;border-spacing:0 10px}
+  th{font-weight:600;color:var(--muted);text-align:left}
+  td{background:#fff;padding:12px;border-top:1px solid #eee;border-bottom:1px solid #eee}
+  tr td:first-child{border-left:1px solid #eee;border-top-left-radius:12px;border-bottom-left-radius:12px}
+  tr td:last-child{border-right:1px solid #eee;border-top-right-radius:12px;border-bottom-right-radius:12px}
+  .badge{padding:4px 8px;border-radius:999px;font-size:12px;display:inline-block}
+  .paid{background:rgba(16,185,129,.12);color:#065f46}
+  .pending{background:rgba(245,158,11,.14);color:#92400e}
+  .right{text-align:right}
+  .actions{display:flex;gap:4px;flex-wrap:wrap}
+  .actions button{border:none;background:transparent;padding:6px;border-radius:6px}
+  .actions button:hover{background:rgba(0,0,0,.05)}
+  .drawer{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:flex-start;justify-content:flex-end;z-index:100}
+  .panel{width:420px;max-width:92vw;background:#fff;height:100%;padding:18px 16px 24px 16px;overflow-y:auto}
+  .panel h2{margin:8px 0 12px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .muted{color:var(--muted)}
+  .loading{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,0,0,.1);border-radius:50%;border-top-color:var(--primary);animation:spin 1s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
   /* Auth box */
-  .auth {
-    max-width: 460px;
-    margin: 32px auto;
-    padding: 24px;
-  }
-  .hidden {
-    display: none;
-  }
-  /* Toast notifications */
-  .toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--ink);
-    color: #fff;
-    padding: 12px 16px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,.15);
-    z-index: 1000;
-    display: none;
-  }
+  .auth{max-width:460px;margin:32px auto;padding:24px}
+  .hidden{display:none}
+  /* Toast */
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 16px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.15);z-index:1000;display:none}
   /* Mobile tweaks */
-  @media (max-width: 720px) {
-    .grid {
-      grid-template-columns: 1fr;
-    }
-    .toolbar {
-      flex-direction: column;
-      align-items: stretch;
-    }
-    table {
-      display: block;
-      overflow-x: auto;
-      white-space: nowrap;
-    }
-    .kpi {
-      flex: 1 1 100%;
-    }
-    .actions {
-      flex-direction: column;
-    }
+  @media (max-width: 720px){
+    .grid{grid-template-columns:1fr}
+    .toolbar{flex-direction:column;align-items:stretch}
+    table{display:block;overflow-x:auto;white-space:nowrap}
+    .kpi{flex:1 1 100%}
   }
 </style>
 </head>
@@ -321,727 +134,453 @@
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script type="module">
-document.addEventListener('DOMContentLoaded', async () => {
-  // Debug helper
-  window.$$ = (selector) => document.querySelector(selector);
+<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+<script>
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyC_jajxbia834cronj9_Ne5S0SaYckWahk",
+  authDomain: "booking-app-da062.firebaseapp.com",
+  projectId: "booking-app-da062",
+  storageBucket: "booking-app-da062.appspot.com",
+  messagingSenderId: "155890159587",
+  appId: "1:155890159587:web:b450bb16c8fe3c5b131ad6"
+};
+
+// Initialize Firebase
+const app = firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// Local UI state
+const state = { clients: [], bookings: [], user: null, unsubscribe: null };
+const $$ = (s) => document.querySelector(s);
+
+// Toast notification
+function showToast(message, duration = 3000) {
+  const toast = $$('#toast');
+  toast.textContent = message;
+  toast.style.display = 'block';
+  setTimeout(() => { toast.style.display = 'none'; }, duration);
+}
+
+// ---------- Auth ----------
+$$('#btnSignup').onclick = async () => {
+  const email = $$('#authEmail').value.trim();
+  const password = $$('#authPass').value.trim();
+  if (!email || !password) return showToast('Email & password required');
   
-  // Initialize Supabase
-  const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-  const SUPABASE_URL = 'https://zzcydkmhxmxmsbvdyglt.supabase.co';
-  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp6Y3lka21oeG14bXNidmR5Z2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU1NTQwMjMsImV4cCI6MjA3MTEzMDAyM30.egNDi5EmTkoMW_kcWZwA185UjJFiYIlxftgjUiCZyag';
-  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-  console.log('Supabase initialized:', !!supabase);
-
-  // State management
-  const state = { 
-    clients: [], 
-    bookings: [], 
-    user: null,
-    currentBooking: null
-  };
-
-  // Toast notification system
-  function showToast(message, duration = 3000) {
-    const toast = $$('#toast');
-    toast.textContent = message;
-    toast.style.display = 'block';
-    setTimeout(() => { toast.style.display = 'none'; }, duration);
+  $$('#btnSignup').disabled = true;
+  $$('#btnSignup').innerHTML = '<span class="loading"></span> Signing up...';
+  
+  try {
+    await auth.createUserWithEmailAndPassword(email, password);
+    showToast('Account created successfully!');
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    $$('#btnSignup').disabled = false;
+    $$('#btnSignup').textContent = 'Sign up';
   }
+};
 
-  // ----------------- AUTHENTICATION -----------------
-  $$('#btnLogin').addEventListener('click', handleLogin);
-  $$('#btnSignup').addEventListener('click', handleSignup);
-  $$('#btnReset').addEventListener('click', handlePasswordReset);
-  $$('#btnLogout').addEventListener('click', handleLogout);
-
-  async function handleLogin() {
-    try {
-      const email = $$('#authEmail').value.trim();
-      const password = $$('#authPass').value.trim();
-      
-      if (!email || !password) {
-        showToast('Email and password required');
-        return;
-      }
-
-      $$('#btnLogin').disabled = true;
-      $$('#btnLogin').innerHTML = '<span class="loading"></span> Logging in...';
-
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-      if (error) throw error;
-      
-      state.user = data.user;
-      showToast(`Welcome back, ${email.split('@')[0]}!`);
-      await refreshAll();
-      
-    } catch (error) {
-      console.error('Login failed:', error);
-      showToast(error.message);
-    } finally {
-      $$('#btnLogin').disabled = false;
-      $$('#btnLogin').textContent = 'Login';
-    }
+$$('#btnLogin').onclick = async () => {
+  const email = $$('#authEmail').value.trim();
+  const password = $$('#authPass').value.trim();
+  if (!email || !password) return showToast('Email & password required');
+  
+  $$('#btnLogin').disabled = true;
+  $$('#btnLogin').innerHTML = '<span class="loading"></span> Logging in...';
+  
+  try {
+    await auth.signInWithEmailAndPassword(email, password);
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    $$('#btnLogin').disabled = false;
+    $$('#btnLogin').textContent = 'Login';
   }
+};
 
-  async function handleSignup() {
-    try {
-      const email = $$('#authEmail').value.trim();
-      const password = $$('#authPass').value.trim();
-      
-      if (!email || !password) {
-        showToast('Email and password required');
-        return;
-      }
-
-      $$('#btnSignup').disabled = true;
-      $$('#btnSignup').innerHTML = '<span class="loading"></span> Signing up...';
-
-      const { error } = await supabase.auth.signUp({ 
-        email, 
-        password,
-        options: {
-          emailRedirectTo: window.location.href
-        }
-      });
-
-      if (error) throw error;
-      
-      showToast('Sign up successful! Please check your email for confirmation.');
-      
-    } catch (error) {
-      console.error('Signup failed:', error);
-      showToast(error.message);
-    } finally {
-      $$('#btnSignup').disabled = false;
-      $$('#btnSignup').textContent = 'Sign up';
-    }
+$$('#btnReset').onclick = async () => {
+  const email = $$('#authEmail').value.trim();
+  if (!email) return showToast('Please enter your email');
+  
+  $$('#btnReset').disabled = true;
+  $$('#btnReset').innerHTML = '<span class="loading"></span> Sending...';
+  
+  try {
+    await auth.sendPasswordResetEmail(email);
+    showToast('Password reset link sent to your email');
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    $$('#btnReset').disabled = false;
+    $$('#btnReset').textContent = 'Forgot password?';
   }
+};
 
-  async function handlePasswordReset() {
-    try {
-      const email = $$('#authEmail').value.trim();
-      if (!email) {
-        showToast('Please enter your email');
-        return;
-      }
-
-      $$('#btnReset').disabled = true;
-      $$('#btnReset').innerHTML = '<span class="loading"></span> Sending...';
-
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.href
-      });
-
-      if (error) throw error;
-      
-      showToast('Password reset link sent to your email');
-      
-    } catch (error) {
-      console.error('Password reset failed:', error);
-      showToast(error.message);
-    } finally {
-      $$('#btnReset').disabled = false;
-      $$('#btnReset').textContent = 'Forgot password?';
-    }
+$$('#btnLogout').onclick = async () => {
+  try {
+    await auth.signOut();
+    showToast('Logged out successfully');
+  } catch (error) {
+    showToast(error.message);
   }
+};
 
-  async function handleLogout() {
-    try {
-      await supabase.auth.signOut();
-      showToast('Logged out successfully');
-      setTimeout(() => location.reload(), 1000);
-    } catch (error) {
-      console.error('Logout failed:', error);
-      showToast(error.message);
-    }
+// Auth state listener
+auth.onAuthStateChanged((user) => {
+  state.user = user;
+  $$('#authBox').classList.toggle('hidden', !!user);
+  $$('#app').classList.toggle('hidden', !user);
+  
+  if (user) {
+    if (state.unsubscribe) state.unsubscribe(); // Clean up previous listener
+    loadInitialData();
+  } else {
+    if (state.unsubscribe) state.unsubscribe();
+    state.clients = [];
+    state.bookings = [];
+    render();
   }
+});
 
-  // Auth state listener
-  supabase.auth.onAuthStateChange(async (event, session) => {
-    const loggedIn = !!session?.user;
-    state.user = session?.user || null;
-    
-    $$('#authBox').classList.toggle('hidden', loggedIn);
-    $$('#app').classList.toggle('hidden', !loggedIn);
-    
-    if (loggedIn) {
-      await refreshAll();
-    }
-  });
-
-  // Check session on load
-  const { data: { session } } = await supabase.auth.getSession();
-  if (session?.user) {
-    state.user = session.user;
-    $$('#authBox').classList.add('hidden');
-    $$('#app').classList.remove('hidden');
-    await refreshAll();
-  }
-
-  // ----------------- DATA MANAGEMENT -----------------
-  async function loadClients() {
-    try {
-      const { data, error } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('user_id', state.user.id)
-        .order('name');
-        
-      if (error) throw error;
-      
-      state.clients = data || [];
-    } catch (error) {
-      console.error('Failed to load clients:', error);
-      showToast('Failed to load clients');
-    }
-  }
-
-  async function loadBookings() {
-    try {
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('user_id', state.user.id)
-        .order('date', { ascending: false });
-        
-      if (error) throw error;
-      
-      state.bookings = data || [];
-    } catch (error) {
-      console.error('Failed to load bookings:', error);
-      showToast('Failed to load bookings');
-    }
-  }
-
-  async function upsertClient(name, phone) {
-    try {
-      // Check for existing clients with similar name or phone
-      const { data: existing } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('user_id', state.user.id)
-        .or(`name.ilike.%${name}%,phone.eq.${phone}`)
-        .limit(1);
-        
-      if (existing?.length) return existing[0].id;
-      
-      // Create new client if no match found
-      const { data, error } = await supabase
-        .from('clients')
-        .insert({ 
-          user_id: state.user.id, 
-          name: name.trim(), 
-          phone: (phone || '').trim() 
-        })
-        .select('id')
-        .single();
-        
-      if (error) throw error;
-      
-      state.clients.push({ 
-        id: data.id, 
-        user_id: state.user.id, 
-        name, 
-        phone 
-      });
-      
-      return data.id;
-    } catch (error) {
-      console.error('Failed to upsert client:', error);
-      showToast(error.message);
-      throw error;
-    }
-  }
-
-  async function saveBooking(booking) {
-    try {
-      if (!booking.id) {
-        // Create new booking
-        const { data, error } = await supabase
-          .from('bookings')
-          .insert({ ...booking, user_id: state.user.id })
-          .select('*')
-          .single();
-          
-        if (error) throw error;
-        
-        state.bookings.push(data);
-        showToast('Booking created successfully');
-        return data;
-      } else {
-        // Update existing booking
-        const { error } = await supabase
-          .from('bookings')
-          .update(booking)
-          .eq('id', booking.id)
-          .eq('user_id', state.user.id);
-          
-        if (error) throw error;
-        
-        const index = state.bookings.findIndex(b => b.id === booking.id);
-        if (index >= 0) state.bookings[index] = { ...state.bookings[index], ...booking };
-        
-        showToast('Booking updated successfully');
-        return booking;
-      }
-    } catch (error) {
-      console.error('Failed to save booking:', error);
-      showToast(error.message);
-      throw error;
-    }
-  }
-
-  async function deleteBooking(id) {
-    try {
-      const { error } = await supabase
-        .from('bookings')
-        .delete()
-        .eq('id', id)
-        .eq('user_id', state.user.id);
-        
-      if (error) throw error;
-      
-      state.bookings = state.bookings.filter(b => b.id !== id);
-      showToast('Booking deleted successfully');
-    } catch (error) {
-      console.error('Failed to delete booking:', error);
-      showToast(error.message);
-      throw error;
-    }
-  }
-
-  async function refreshAll() {
-    try {
-      $$('#tbl tbody').innerHTML = '<tr><td colspan="7" style="text-align:center"><span class="loading"></span> Loading...</td></tr>';
-      await Promise.all([loadClients(), loadBookings()]);
+// ---------- Data Operations ----------
+async function loadInitialData() {
+  // Load clients
+  const clientsSnapshot = await db.collection('clients')
+    .where('userId', '==', state.user.uid)
+    .get();
+  state.clients = clientsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Set up real-time listener for bookings
+  state.unsubscribe = db.collection('bookings')
+    .where('userId', '==', state.user.uid)
+    .orderBy('date')
+    .onSnapshot((snapshot) => {
+      state.bookings = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       render();
-    } catch (error) {
-      console.error('Failed to refresh data:', error);
-      showToast('Failed to load data');
+    });
+}
+
+async function upsertClient(name, phone) {
+  const existingClient = state.clients.find(c => 
+    c.name.toLowerCase() === name.toLowerCase() && 
+    (c.phone || '') === (phone || '')
+  );
+  
+  if (existingClient) return existingClient.id;
+  
+  const docRef = await db.collection('clients').add({
+    name: name.trim(),
+    phone: (phone || '').trim(),
+    userId: state.user.uid,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+  
+  state.clients.push({ id: docRef.id, name, phone, userId: state.user.uid });
+  return docRef.id;
+}
+
+async function addOrUpdateBooking(booking) {
+  try {
+    if (booking.id) {
+      await db.collection('bookings').doc(booking.id).update(booking);
+      showToast('Booking updated successfully');
+    } else {
+      await db.collection('bookings').add({
+        ...booking,
+        userId: state.user.uid,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Booking created successfully');
     }
+  } catch (error) {
+    console.error('Error saving booking:', error);
+    showToast('Error saving booking: ' + error.message);
   }
+}
 
-  // ----------------- UI RENDERING -----------------
-  function updateMetrics() {
-    const clients = new Set(state.clients.map(c => c.id));
-    const earnings = state.bookings.reduce((sum, b) => sum + (b.paid || 0), 0);
-    const pending = state.bookings.reduce((sum, b) => {
+async function deleteBooking(id) {
+  if (!confirm('Delete this booking?')) return;
+  
+  try {
+    await db.collection('bookings').doc(id).delete();
+    showToast('Booking deleted successfully');
+  } catch (error) {
+    console.error('Error deleting booking:', error);
+    showToast('Error deleting booking: ' + error.message);
+  }
+}
+
+// ---------- UI Rendering ----------
+function metrics() {
+  const clients = new Set(state.bookings.map(b => b.clientId));
+  const earnings = state.bookings.reduce((sum, b) => sum + (b.paid || 0), 0);
+  const pending = state.bookings.reduce((sum, b) => {
+    const balance = (b.amount || 0) - (b.paid || 0);
+    return sum + (balance > 0 ? balance : 0);
+  }, 0);
+  
+  $$('#kpiClients').textContent = clients.size;
+  $$('#kpiBookings').textContent = state.bookings.length;
+  $$('#kpiEarnings').textContent = 'PKR ' + earnings.toLocaleString();
+  $$('#kpiPending').textContent = 'PKR ' + pending.toLocaleString();
+}
+
+function render() {
+  const q = $$('#q').value.trim().toLowerCase();
+  const statusFilter = $$('#filterStatus').value;
+  const tb = $$('#tbl tbody');
+  tb.innerHTML = '';
+  
+  const filtered = state.bookings
+    .filter(b => {
+      const client = state.clients.find(c => c.id === b.clientId) || { name: '', phone: '' };
+      const searchText = [client.name, client.phone, b.date, b.from_time, b.to_time].join(' ').toLowerCase();
+      const matchesSearch = !q || searchText.includes(q);
+      
       const balance = (b.amount || 0) - (b.paid || 0);
-      return sum + (balance > 0 ? balance : 0);
-    }, 0);
+      const matchesStatus = !statusFilter || 
+        (statusFilter === 'paid' && balance <= 0) || 
+        (statusFilter === 'pending' && balance > 0);
+      
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => (a.date + a.from_time).localeCompare(b.date + b.from_time));
+  
+  $$('#empty').style.display = filtered.length ? 'none' : 'block';
+  
+  filtered.forEach(b => {
+    const client = state.clients.find(c => c.id === b.clientId) || { name: '', phone: '' };
+    const bal = (b.amount || 0) - (b.paid || 0);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${client.name}</strong><div class="muted">${client.phone || ''}</div></td>
+      <td class="right">${b.date} • ${b.from_time || ''}–${b.to_time || ''}</td>
+      <td class="right">PKR ${(+b.amount || 0).toLocaleString()}</td>
+      <td><span class="badge ${bal <= 0 ? 'paid' : 'pending'}">${bal <= 0 ? 'Paid' : 'Pending'}</span></td>
+      <td class="right">PKR ${(+b.paid || 0).toLocaleString()}</td>
+      <td class="right">PKR ${Math.max(bal, 0).toLocaleString()}</td>
+      <td class="actions">
+        <button title="Mark Paid">✅</button>
+        <button title="Invoice PDF">🧾</button>
+        <button title="Edit">✏️</button>
+        <button title="Delete">🗑️</button>
+      </td>`;
     
-    $$('#kpiClients').textContent = clients.size;
-    $$('#kpiBookings').textContent = state.bookings.length;
-    $$('#kpiEarnings').textContent = `PKR ${earnings.toLocaleString()}`;
-    $$('#kpiPending').textContent = `PKR ${pending.toLocaleString()}`;
-  }
+    const [btnPaid, btnInv, btnEdit, btnDel] = tr.querySelectorAll('button');
+    btnPaid.onclick = async () => { await addOrUpdateBooking({ ...b, paid: b.amount }); };
+    btnDel.onclick = async () => { await deleteBooking(b.id); };
+    btnEdit.onclick = () => openDrawer(b);
+    btnInv.onclick = () => invoicePDF(b, client, Math.max(bal, 0));
+    
+    tb.appendChild(tr);
+  });
+  
+  metrics();
+}
 
-  function renderBookings() {
-    const query = $$('#q').value.trim().toLowerCase();
-    const statusFilter = $$('#filterStatus').value;
-    const tbody = $$('#tbl tbody');
+// ---------- Form Handling ----------
+function openDrawer(booking = null) {
+  $$('#drawer').style.display = 'flex';
+  $$('#formTitle').textContent = booking ? 'Edit Booking' : 'Add Booking';
+  $$('#btnDelete').classList.toggle('hidden', !booking);
+  
+  const client = booking ? state.clients.find(c => c.id === booking.clientId) : { name: '', phone: '' };
+  $$('#f_name').value = client?.name || '';
+  $$('#f_phone').value = client?.phone || '';
+  $$('#f_date').value = booking?.date || '';
+  $$('#f_from').value = booking?.from_time || '';
+  $$('#f_to').value = booking?.to_time || '';
+  $$('#f_amount').value = booking?.amount || '';
+  $$('#f_paid').value = booking?.paid || 0;
+  $$('#f_notes').value = booking?.notes || '';
+  
+  // Store current booking ID for save/delete
+  $$('#btnSave')._bookingId = booking?.id;
+}
+
+function closeDrawer() { 
+  $$('#drawer').style.display = 'none'; 
+  $$('#btnSave')._bookingId = null;
+}
+
+$$('#btnNew').onclick = () => openDrawer();
+$$('#btnCancel').onclick = closeDrawer;
+
+$$('#btnSave').onclick = async () => {
+  const name = $$('#f_name').value.trim();
+  const phone = $$('#f_phone').value.trim();
+  const date = $$('#f_date').value;
+  const from = $$('#f_from').value;
+  const to = $$('#f_to').value;
+  const amount = +$$('#f_amount').value || 0;
+  const paid = +$$('#f_paid').value || 0;
+  const notes = $$('#f_notes').value.trim();
+  
+  if (!name || !date || !from || !to) {
+    showToast('Name, Date, From, and To are required');
+    return;
+  }
+  
+  $$('#btnSave').disabled = true;
+  $$('#btnSave').innerHTML = '<span class="loading"></span> Saving...';
+  
+  try {
+    const clientId = await upsertClient(name, phone);
+    await addOrUpdateBooking({
+      id: $$('#btnSave')._bookingId,
+      clientId,
+      date,
+      from_time: from,
+      to_time: to,
+      amount,
+      paid,
+      notes
+    });
+    closeDrawer();
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    $$('#btnSave').disabled = false;
+    $$('#btnSave').textContent = 'Save';
+  }
+};
+
+$$('#btnDelete').onclick = async () => {
+  if (!$$('#btnSave')._bookingId) return;
+  await deleteBooking($$('#btnSave')._bookingId);
+  closeDrawer();
+};
+
+// ---------- PDF Invoice ----------
+function invoicePDF(booking, client, balance) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  
+  // Header
+  doc.setFillColor(17, 17, 17);
+  doc.rect(0, 0, 210, 22, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(16);
+  doc.text('Reservation Voucher', 14, 14);
+  
+  // Body
+  doc.setTextColor(0, 0, 0);
+  doc.setFontSize(11);
+  let y = 30;
+  
+  doc.text(`From: Your Business`, 14, y); y += 8;
+  doc.text(`Bill To: ${client.name} ${client.phone ? '(' + client.phone + ')' : ''}`, 14, y); y += 8;
+  doc.text(`Date: ${booking.date}   Time: ${booking.from_time} - ${booking.to_time}`, 14, y); y += 12;
+  
+  // Divider
+  doc.setDrawColor(230, 230, 230);
+  doc.line(14, y, 196, y); y += 8;
+  
+  // Items
+  doc.text('Description', 14, y);
+  doc.text('Amount (PKR)', 196, y, { align: 'right' }); y += 8;
+  doc.line(14, y, 196, y); y += 8;
+  
+  doc.text('Booking Service', 14, y);
+  doc.text((booking.amount || 0).toLocaleString(), 196, y, { align: 'right' }); y += 10;
+  doc.line(14, y, 196, y); y += 10;
+  
+  // Totals
+  doc.text('Amount Paid', 14, y);
+  doc.text((booking.paid || 0).toLocaleString(), 196, y, { align: 'right' }); y += 8;
+  
+  doc.text('Balance Due', 14, y);
+  doc.text(balance.toLocaleString(), 196, y, { align: 'right' }); y += 12;
+  
+  if (booking.notes) {
+    doc.text(`Notes: ${booking.notes}`, 14, y); y += 8;
+  }
+  
+  // Footer
+  doc.setFontSize(10);
+  doc.setTextColor(107, 114, 128);
+  doc.text('Thank you for your business.', 14, 275);
+  
+  doc.save(`invoice_${client.name.replace(/\s+/g, '_')}_${booking.date}.pdf`);
+}
+
+// ---------- Export Excel ----------
+$$('#btnExportExcel').onclick = async () => {
+  try {
+    $$('#btnExportExcel').disabled = true;
+    $$('#btnExportExcel').innerHTML = '<span class="loading"></span> Exporting...';
     
-    tbody.innerHTML = '';
-    
-    const filteredBookings = state.bookings
-      .filter(booking => {
-        const client = state.clients.find(c => c.id === booking.client_id) || { name: '', phone: '' };
-        const searchText = [
-          client.name,
-          client.phone,
-          booking.date,
-          booking.from_time,
-          booking.to_time,
-          booking.amount,
-          booking.paid
-        ].join(' ').toLowerCase();
-        
-        const matchesSearch = !query || searchText.includes(query);
-        
-        const balance = (booking.amount || 0) - (booking.paid || 0);
-        const matchesStatus = !statusFilter || 
-          (statusFilter === 'paid' && balance <= 0) || 
-          (statusFilter === 'pending' && balance > 0);
-        
-        return matchesSearch && matchesStatus;
-      })
-      .sort((a, b) => new Date(b.date) - new Date(a.date));
-    
-    $$('#empty').style.display = filteredBookings.length ? 'none' : 'block';
-    
-    filteredBookings.forEach(booking => {
-      const client = state.clients.find(c => c.id === booking.client_id) || { name: '', phone: '' };
-      const balance = (booking.amount || 0) - (booking.paid || 0);
-      
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>
-          <strong>${client.name}</strong>
-          <div class="muted">${client.phone || ''}</div>
-        </td>
-        <td class="right">
-          ${booking.date}<br>
-          ${booking.from_time || ''}–${booking.to_time || ''}
-        </td>
-        <td class="right">PKR ${(booking.amount || 0).toLocaleString()}</td>
-        <td>
-          <span class="badge ${balance <= 0 ? 'paid' : 'pending'}">
-            ${balance <= 0 ? 'Paid' : 'Pending'}
-          </span>
-        </td>
-        <td class="right">PKR ${(booking.paid || 0).toLocaleString()}</td>
-        <td class="right">PKR ${Math.max(balance, 0).toLocaleString()}</td>
-        <td class="actions">
-          <button title="Mark Paid">✅</button>
-          <button title="Invoice PDF">🧾</button>
-          <button title="Edit">✏️</button>
-          <button title="Delete">🗑️</button>
-        </td>
-      `;
-      
-      const [paidBtn, invoiceBtn, editBtn, deleteBtn] = row.querySelectorAll('button');
-      
-      paidBtn.addEventListener('click', async () => {
-        if (confirm('Mark this booking as fully paid?')) {
-          try {
-            await saveBooking({ ...booking, paid: booking.amount });
-          } catch (error) {
-            console.error('Failed to mark as paid:', error);
-          }
-        }
-      });
-      
-      invoiceBtn.addEventListener('click', () => {
-        generateInvoicePDF(booking, client, Math.max(balance, 0));
-      });
-      
-      editBtn.addEventListener('click', () => {
-        openBookingForm(booking);
-      });
-      
-      deleteBtn.addEventListener('click', async () => {
-        if (confirm('Delete this booking permanently?')) {
-          try {
-            await deleteBooking(booking.id);
-            render();
-          } catch (error) {
-            console.error('Failed to delete booking:', error);
-          }
-        }
-      });
-      
-      tbody.appendChild(row);
+    // Format bookings data
+    const formattedBookings = state.bookings.map(b => {
+      const client = state.clients.find(c => c.id === b.clientId) || { name: '', phone: '' };
+      const balance = (b.amount || 0) - (b.paid || 0);
+      return {
+        'Client Name': client.name,
+        'Client Phone': client.phone || '',
+        'Date': b.date,
+        'Time': `${b.from_time} - ${b.to_time}`,
+        'Amount (PKR)': b.amount,
+        'Paid (PKR)': b.paid || 0,
+        'Balance (PKR)': Math.max(balance, 0),
+        'Status': balance <= 0 ? 'Paid' : 'Pending',
+        'Notes': b.notes || ''
+      };
     });
     
-    updateMetrics();
-  }
-
-  function render() {
-    renderBookings();
-  }
-
-  // ----------------- BOOKING FORM -----------------
-  $$('#btnNew').addEventListener('click', () => openBookingForm());
-  $$('#btnCancel').addEventListener('click', closeBookingForm);
-  $$('#btnSave').addEventListener('click', saveBookingForm);
-  $$('#btnDelete').addEventListener('click', deleteCurrentBooking);
-
-  // Initialize date/time pickers
-  flatpickr('#f_date', {
-    dateFormat: 'Y-m-d',
-    defaultDate: 'today'
-  });
-  
-  flatpickr('#f_from', {
-    enableTime: true,
-    noCalendar: true,
-    dateFormat: 'H:i',
-    time_24hr: true,
-    defaultHour: 10,
-    minuteIncrement: 15
-  });
-  
-  flatpickr('#f_to', {
-    enableTime: true,
-    noCalendar: true,
-    dateFormat: 'H:i',
-    time_24hr: true,
-    defaultHour: 12,
-    minuteIncrement: 15
-  });
-
-  function openBookingForm(booking = null) {
-    state.currentBooking = booking;
-    const client = booking ? 
-      state.clients.find(c => c.id === booking.client_id) || { name: '', phone: '' } : 
-      { name: '', phone: '' };
-    
-    $$('#formTitle').textContent = booking ? 'Edit Booking' : 'New Booking';
-    $$('#btnDelete').classList.toggle('hidden', !booking);
-    
-    $$('#f_name').value = client.name;
-    $$('#f_phone').value = client.phone || '';
-    $$('#f_date').value = booking?.date || '';
-    $$('#f_from').value = booking?.from_time || '';
-    $$('#f_to').value = booking?.to_time || '';
-    $$('#f_amount').value = booking?.amount || '';
-    $$('#f_paid').value = booking?.paid || 0;
-    $$('#f_notes').value = booking?.notes || '';
-    
-    $$('#drawer').style.display = 'flex';
-  }
-
-  function closeBookingForm() {
-    $$('#drawer').style.display = 'none';
-    state.currentBooking = null;
-  }
-
-  async function saveBookingForm() {
-    try {
-      const name = $$('#f_name').value.trim();
-      const phone = $$('#f_phone').value.trim();
-      const date = $$('#f_date').value;
-      const fromTime = $$('#f_from').value;
-      const toTime = $$('#f_to').value;
-      const amount = parseFloat($$('#f_amount').value) || 0;
-      const paid = parseFloat($$('#f_paid').value) || 0;
-      const notes = $$('#f_notes').value.trim();
-      
-      // Validation
-      if (!name || !date || !fromTime || !toTime) {
-        showToast('Name, Date, From, and To are required');
-        return;
-      }
-      
-      if (new Date(`${date}T${toTime}`) <= new Date(`${date}T${fromTime}`)) {
-        showToast('End time must be after start time');
-        return;
-      }
-      
-      if (amount <= 0) {
-        showToast('Amount must be greater than 0');
-        return;
-      }
-      
-      if (paid < 0) {
-        showToast('Paid amount cannot be negative');
-        return;
-      }
-      
-      $$('#btnSave').disabled = true;
-      $$('#btnSave').innerHTML = '<span class="loading"></span> Saving...';
-      
-      const clientId = await upsertClient(name, phone);
-      
-      const bookingData = {
-        id: state.currentBooking?.id,
-        client_id: clientId,
-        date,
-        from_time: fromTime,
-        to_time: toTime,
-        amount,
-        paid,
-        notes
-      };
-      
-      await saveBooking(bookingData);
-      closeBookingForm();
-      render();
-      
-    } catch (error) {
-      console.error('Failed to save booking:', error);
-    } finally {
-      $$('#btnSave').disabled = false;
-      $$('#btnSave').textContent = 'Save';
-    }
-  }
-
-  async function deleteCurrentBooking() {
-    if (!state.currentBooking?.id) return;
-    
-    if (confirm('Delete this booking permanently?')) {
-      try {
-        await deleteBooking(state.currentBooking.id);
-        closeBookingForm();
-        render();
-      } catch (error) {
-        console.error('Failed to delete booking:', error);
-      }
-    }
-  }
-
-  // ----------------- INVOICE PDF -----------------
-  function generateInvoicePDF(booking, client, balance) {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-    
-    // Header
-    doc.setFillColor(17, 17, 17);
-    doc.rect(0, 0, 210, 22, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(16);
-    doc.text('Reservation Voucher', 14, 14);
-    
-    // Business info
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(11);
-    let y = 30;
-    
-    doc.setFont(undefined, 'bold');
-    doc.text('From: Your Business Name', 14, y);
-    doc.setFont(undefined, 'normal');
-    y += 8;
-    
-    // Client info
-    doc.setFont(undefined, 'bold');
-    doc.text(`Bill To: ${client.name}`, 14, y);
-    doc.setFont(undefined, 'normal');
-    if (client.phone) {
-      y += 8;
-      doc.text(`Phone: ${client.phone}`, 14, y);
-    }
-    y += 8;
-    
-    // Booking details
-    doc.text(`Date: ${booking.date}`, 14, y);
-    doc.text(`Time: ${booking.from_time} - ${booking.to_time}`, 80, y);
-    y += 12;
-    
-    // Divider
-    doc.setDrawColor(230, 230, 230);
-    doc.line(14, y, 196, y);
-    y += 8;
-    
-    // Table header
-    doc.setFont(undefined, 'bold');
-    doc.text('Description', 14, y);
-    doc.text('Amount (PKR)', 196, y, { align: 'right' });
-    doc.setFont(undefined, 'normal');
-    y += 8;
-    doc.line(14, y, 196, y);
-    y += 8;
-    
-    // Booking item
-    doc.text('Booking Fee', 14, y);
-    doc.text((booking.amount || 0).toLocaleString(), 196, y, { align: 'right' });
-    y += 10;
-    doc.line(14, y, 196, y);
-    y += 10;
-    
-    // Totals
-    doc.setFont(undefined, 'bold');
-    doc.text('Amount Paid', 14, y);
-    doc.text((booking.paid || 0).toLocaleString(), 196, y, { align: 'right' });
-    y += 8;
-    doc.text('Balance Due', 14, y);
-    doc.text(balance.toLocaleString(), 196, y, { align: 'right' });
-    y += 12;
-    
-    // Notes
-    if (booking.notes) {
-      doc.setFont(undefined, 'italic');
-      doc.text(`Notes: ${booking.notes}`, 14, y, { maxWidth: 180 });
-      y += 12;
-    }
-    
-    // Footer
-    doc.setFontSize(10);
-    doc.setTextColor(107, 114, 128);
-    doc.text('Thank you for your business.', 14, 275);
-    
-    // Save PDF
-    const fileName = `invoice_${client.name.replace(/\s+/g, '_')}_${booking.date}.pdf`;
-    doc.save(fileName);
-  }
-
-  // ----------------- EXPORT EXCEL -----------------
-  $$('#btnExportExcel').addEventListener('click', exportToExcel);
-
-  async function exportToExcel() {
-    try {
-      $$('#btnExportExcel').disabled = true;
-      $$('#btnExportExcel').innerHTML = '<span class="loading"></span> Exporting...';
-      
-      // Get bookings with client info
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          clients(name, phone)
-        `)
-        .eq('user_id', state.user.id);
-      
-      // Format bookings data
-      const formattedBookings = (bookings || []).map(b => {
+    // Format clients data
+    const formattedClients = state.clients.map(c => {
+      const clientBookings = state.bookings.filter(b => b.clientId === c.id);
+      const totalPaid = clientBookings.reduce((sum, b) => sum + (b.paid || 0), 0);
+      const totalBalance = clientBookings.reduce((sum, b) => {
         const balance = (b.amount || 0) - (b.paid || 0);
-        return {
-          'Client Name': b.clients?.name || '',
-          'Client Phone': b.clients?.phone || '',
-          'Date': b.date,
-          'Time': `${b.from_time} - ${b.to_time}`,
-          'Amount (PKR)': b.amount,
-          'Paid (PKR)': b.paid,
-          'Balance (PKR)': Math.max(balance, 0),
-          'Status': balance <= 0 ? 'Paid' : 'Pending',
-          'Notes': b.notes || ''
-        };
-      });
+        return sum + (balance > 0 ? balance : 0);
+      }, 0);
       
-      // Format clients data
-      const formattedClients = state.clients.map(c => {
-        const clientBookings = state.bookings.filter(b => b.client_id === c.id);
-        const totalPaid = clientBookings.reduce((sum, b) => sum + (b.paid || 0), 0);
-        const totalBalance = clientBookings.reduce((sum, b) => {
-          const balance = (b.amount || 0) - (b.paid || 0);
-          return sum + (balance > 0 ? balance : 0);
-        }, 0);
-        
-        return {
-          'Name': c.name,
-          'Phone': c.phone || '',
-          'Total Bookings': clientBookings.length,
-          'Total Paid (PKR)': totalPaid,
-          'Total Balance (PKR)': totalBalance
-        };
-      });
-      
-      // Create workbook
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, 
-        XLSX.utils.json_to_sheet(formattedBookings), 
-        'Bookings'
-      );
-      XLSX.utils.book_append_sheet(wb, 
-        XLSX.utils.json_to_sheet(formattedClients), 
-        'Clients'
-      );
-      
-      // Generate filename with current date
-      const today = new Date().toISOString().slice(0, 10);
-      const fileName = `bookings_export_${today}.xlsx`;
-      
-      // Download file
-      XLSX.writeFile(wb, fileName);
-      showToast('Export completed successfully');
-      
-    } catch (error) {
-      console.error('Export failed:', error);
-      showToast('Export failed: ' + error.message);
-    } finally {
-      $$('#btnExportExcel').disabled = false;
-      $$('#btnExportExcel').textContent = 'Export Excel';
-    }
+      return {
+        'Name': c.name,
+        'Phone': c.phone || '',
+        'Total Bookings': clientBookings.length,
+        'Total Paid (PKR)': totalPaid,
+        'Total Balance (PKR)': totalBalance
+      };
+    });
+    
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(formattedBookings), 'Bookings');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(formattedClients), 'Clients');
+    
+    // Generate filename
+    const today = new Date().toISOString().slice(0, 10);
+    XLSX.writeFile(wb, `bookings_export_${today}.xlsx`);
+    
+    showToast('Export completed successfully');
+  } catch (error) {
+    console.error('Export failed:', error);
+    showToast('Export failed: ' + error.message);
+  } finally {
+    $$('#btnExportExcel').disabled = false;
+    $$('#btnExportExcel').textContent = 'Export Excel';
   }
+};
 
-  // ----------------- SEARCH & FILTERS -----------------
-  $$('#q').addEventListener('input', render);
-  $$('#filterStatus').addEventListener('change', render);
+// ---------- Initialize UI ----------
+flatpickr('#f_date', { dateFormat: 'Y-m-d' });
+flatpickr('#f_from', { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true });
+flatpickr('#f_to', { enableTime: true, noCalendar: true, dateFormat: 'H:i', time_24hr: true });
 
-  // Initial render
-  if (state.user) {
-    render();
+$$('#q').addEventListener('input', render);
+$$('#filterStatus').addEventListener('change', render);
+
+// Check auth state on load
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    loadInitialData();
   }
 });
 </script>
